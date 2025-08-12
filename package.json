@@ -10,10 +10,10 @@
     "start": "web-dev-server"
   },
   "dependencies": {
-    "@lion/ui": "^0.4.1",
-    "lit": "^2.0.2"
+    "@lion/ui": "^0.13.1",
+    "lit": "^3.3.1"
   },
   "devDependencies": {
-    "@web/dev-server": "^0.1.34"
+    "@web/dev-server": "^0.4.6"
   }
 }
