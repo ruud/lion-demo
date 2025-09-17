@@ -3,15 +3,21 @@ import { html, LitElement } from 'lit';
 import { LionDialog } from '@lion/ui/dialog.js';
 import { OverlayController } from '@lion/ui/overlays.js';
 
-const originalHide = OverlayController.prototype.hide;
-OverlayController.prototype.hide = function(...args) {
-  console.debug('before hide, body margin:', document.documentElement.style.marginRight);
-  originalHide.call(this, ...args);
-  console.debug('hidden, body margin:', document.documentElement.style.marginRight);
+function ensureScrollbar() {
+  const style = document.createElement("style");
+  style.textContent = `::-webkit-scrollbar { -webkit-appearance: none; width: 25px; background-color: grey; }; ::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,.5); } body { height: 10000px; }`;
+  document.head.appendChild(style);
 }
 
-// As a side-effect this way of importing defines the custom elements, eg. <lion-button>, ready for use
-// import '@lion/ui/define/lion-dialog.js';
+ensureScrollbar();
+
+
+const originalHide = OverlayController.prototype.hide;
+OverlayController.prototype.hide = function(...args) {
+  console.debug('before hide, body margin:', document.body.style.marginRight);
+  originalHide.call(this, ...args);
+  console.debug('hidden, body margin:', document.body.style.marginRight);
+}
 
 class DebugDialog extends LionDialog {
   /**
