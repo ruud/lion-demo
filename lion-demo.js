@@ -1,6 +1,9 @@
 import { html, LitElement } from 'lit';
 
 import '@lion/ui/define/lion-tabs.js';
+import './my-timer.js';
+import './ajax-provider.js';
+import './my-fetcher.js';
 
 export class LionDemo extends LitElement {
   render() {

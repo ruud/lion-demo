@@ -10,7 +10,9 @@
     "start": "web-dev-server"
   },
   "dependencies": {
+    "@lion/ajax": "^2.1.0",
     "@lion/ui": "^0.13.1",
+    "@lit/context": "^1.1.6",
     "lit": "^3.3.1"
   },
   "devDependencies": {
