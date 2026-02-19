@@ -9,7 +9,7 @@ export class LionDemo extends LitElement {
   render() {
     return html`
     <div class="container">
-      <h1>Lion Tabs Example</h1>
+      <h1>Resumable Lion Tabs Example</h1>
       
       <lion-tabs>
         <button slot="tab">Tab 1: Overview</button>
