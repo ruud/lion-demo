@@ -38,6 +38,8 @@ export const ResumableMixin = (superClass) =>
       this._hasPendingUpdate = false;
       /** @type {Array} Queue of fetch calls to execute on resume */
       this._fetchQueue = [];
+      /** @type {Array} Buffer for in-flight results that arrived while paused */
+      this._inflightResults = [];
       /** @type {ContextConsumer} Consumes an Ajax instance from context */
       this._ajaxConsumer = new ContextConsumer(this, {
         context: ajaxContext,
@@ -134,6 +136,8 @@ export const ResumableMixin = (superClass) =>
         }
         // Flush any queued fetch calls
         this._flushFetchQueue();
+        // Deliver any in-flight responses that arrived while paused
+        this._flushInflightResults();
       } else if (!isVisible && this._resumed) {
         this._resumed = false;
         this.onPause();
@@ -167,8 +171,15 @@ export const ResumableMixin = (superClass) =>
     /**
      * A resumable version of fetch(). Uses Lion's ajax.fetch under the hood,
      * which provides interceptors, XSRF handling, and caching support.
-     * When the component is active, it executes immediately.
-     * When paused, the request is queued and executed once the component resumes.
+     *
+     * Behaviour:
+     * - When active: executes immediately. If the tab is switched away before
+     *   the response arrives, the response is buffered and delivered once the
+     *   component resumes (deferred resolution).
+     * - When paused: the request is queued entirely and executed on resume.
+     *
+     * This means the consuming component never processes a response while
+     * hidden — it pairs naturally with shouldUpdate() blocking renders.
      *
      * @param {string|Request} input - The resource URL or Request object
      * @param {RequestInit} [init] - Optional fetch options
@@ -176,11 +187,39 @@ export const ResumableMixin = (superClass) =>
      */
     resumableFetch(input, init) {
       if (this._resumed) {
-        return this.ajax.fetch(input, init);
+        return this._trackInflight(this.ajax.fetch(input, init));
       }
 
       return new Promise((resolve, reject) => {
         this._fetchQueue.push({ input, init, resolve, reject });
+      });
+    }
+
+    /**
+     * Wraps a fetch promise so that if the response arrives while paused,
+     * it is buffered and only delivered once the component resumes.
+     * @param {Promise<Response>} fetchPromise
+     * @returns {Promise<Response>}
+     * @private
+     */
+    _trackInflight(fetchPromise) {
+      return new Promise((resolve, reject) => {
+        fetchPromise.then(
+          (response) => {
+            if (this._resumed) {
+              resolve(response);
+            } else {
+              this._inflightResults.push({ resolve, reject, response });
+            }
+          },
+          (err) => {
+            if (this._resumed) {
+              reject(err);
+            } else {
+              this._inflightResults.push({ resolve, reject, error: err });
+            }
+          },
+        );
       });
     }
 
@@ -197,6 +236,22 @@ export const ResumableMixin = (superClass) =>
           resolve(response);
         } catch (err) {
           reject(err);
+        }
+      }
+    }
+
+    /**
+     * Deliver any in-flight fetch results that arrived while paused.
+     * @private
+     */
+    _flushInflightResults() {
+      const results = [...this._inflightResults];
+      this._inflightResults = [];
+      for (const entry of results) {
+        if (entry.error !== undefined) {
+          entry.reject(entry.error);
+        } else {
+          entry.resolve(entry.response);
         }
       }
     }
