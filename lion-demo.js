@@ -18,7 +18,7 @@ export class LionDemo extends LitElement {
 
   render() {
     return html`
-      <h1>${this.header}! Increment is at Nr: ${this.counter}</h1>
+      <h1>Test WebMCP with lion elements</h1>
       </form>
       <lion-form @submit="${ev => ev.preventDefault()}">
         <form @submit="${(event) => {
