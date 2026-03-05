@@ -6,16 +6,6 @@ import '@lion/ui/define/lion-form.js';
 import '@lion/ui/define/lion-input.js';
 
 export class LionDemo extends LitElement {
-  static properties = {
-    header: { type: String },
-    counter: { type: Number },
-  };
-  constructor() {
-    super();
-    this.header = 'Hey dev';
-    this.counter = 0;
-  }
-
   render() {
     return html`
       <h1>Test WebMCP with lion elements</h1>
