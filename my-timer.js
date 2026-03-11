@@ -37,14 +37,12 @@ class MyTimer extends ResumableMixin(LitElement) {
   }
 
   onResume() {
-    console.log('[MyTimer] onResume — starting interval');
     this._interval = setInterval(() => {
       this.seconds++;
     }, 1000);
   }
 
   onPause() {
-    console.log('[MyTimer] onPause — clearing interval');
     clearInterval(this._interval);
     this._interval = null;
   }

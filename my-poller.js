@@ -64,14 +64,12 @@ class MyPoller extends ResumableMixin(AjaxConsumerMixin(LitElement)) {
 
   /** Start polling when the tab becomes visible. */
   onResume() {
-    console.log('[MyPoller] onResume - starting interval');
     this._poll();
     this._interval = setInterval(() => this._poll(), 10000);
   }
 
   /** Stop polling when the tab becomes hidden. */
   onPause() {
-    console.log('[MyPoller] onPause - clearing interval');
     clearInterval(this._interval);
     this._interval = null;
   }

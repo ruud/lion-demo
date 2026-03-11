@@ -32,23 +32,18 @@ export const ResumableMixin = (superClass) =>
       /** @type {ContextConsumer} Consumes panel visibility from context */
       this._visibilityConsumer = new ContextConsumer(this, {
         context: panelVisibleContext,
-        callback: (visible) => {
-          console.log(`[ResumableMixin] context callback on <${this.localName}>, visible=${visible}`);
-          this._onVisibilityChanged(visible);
-        },
+        callback: (visible) => this._onVisibilityChanged(visible),
         subscribe: true,
       });
     }
 
     connectedCallback() {
       super.connectedCallback();
-      console.log(`[ResumableMixin] connectedCallback on <${this.localName}>`);
 
       // If no provider is found, the consumer value stays undefined.
       // Auto-resume after a frame so standalone usage works.
       this._autoResumeRaf = requestAnimationFrame(() => {
         if (this._visibilityConsumer.value === undefined && !this._resumed) {
-          console.log(`[ResumableMixin] auto-resume fallback on <${this.localName}> (no provider)`);
           this._resumed = true;
           this.onResume();
         }

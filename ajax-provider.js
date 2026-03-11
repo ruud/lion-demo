@@ -3,21 +3,26 @@ import { ContextProvider, ContextConsumer } from '@lit/context';
 import { Ajax } from '@lion/ajax';
 import { ajaxContext } from './ajax-context.js';
 import { panelVisibleContext } from './panel-visible-context.js';
+import { workSessionContext } from './worksession-context.js';
+import { customerContext } from './customer-context.js';
 
 /**
  * A provider element that creates an independent Ajax instance and provides
  * it to all descendant components via the Lit Context protocol.
  *
- * It consumes `panelVisibleContext` from the nearest <resumable-panel>.
+ * It consumes `panelVisibleContext` from the nearest panel component.
  * While the panel is hidden, async interceptors on the Ajax instance gate
  * all outgoing requests and incoming responses — they are held until the
  * panel becomes visible again.
  *
- * No events, no document listeners, no DOM traversal. Visibility flows
- * down the tree via context.
+ * It also consumes `workSessionContext` and `customerContext` to automatically
+ * inject `X-WorkSession-Id` and `X-Customer-Id` headers on every request.
+ *
+ * No events, no document listeners, no DOM traversal. Visibility and
+ * identity flow down the tree via context.
  *
  * Usage:
- *   <ajax-provider headers='{"X-Custom": "value"}'>
+ *   <ajax-provider>
  *     <my-fetcher></my-fetcher>
  *   </ajax-provider>
  *
@@ -25,14 +30,8 @@ import { panelVisibleContext } from './panel-visible-context.js';
  * completely independent HTTP configurations and request queues.
  */
 class AjaxProvider extends LitElement {
-  static properties = {
-    /** JSON string of headers to add to every request */
-    headers: { type: String },
-  };
-
   constructor() {
     super();
-    this.headers = '{}';
     this._ajaxInstance = null;
     this._ajaxProvider = null;
     /** @type {boolean} Whether the panel is currently visible */
@@ -40,13 +39,22 @@ class AjaxProvider extends LitElement {
     /** @type {Array<{resolve: Function}>} Pending gate promises */
     this._pendingGates = [];
 
-    /** Consume panel visibility from the nearest <resumable-panel> */
+    /** Consume panel visibility from the nearest panel component */
     this._visibilityConsumer = new ContextConsumer(this, {
       context: panelVisibleContext,
-      callback: (visible) => {
-        console.log(`[AjaxProvider] visibility context changed to ${visible}`);
-        this._onVisibilityChanged(visible);
-      },
+      callback: (visible) => this._onVisibilityChanged(visible),
+      subscribe: true,
+    });
+
+    /** Consume worksession identity for automatic header injection */
+    this._wsConsumer = new ContextConsumer(this, {
+      context: workSessionContext,
+      subscribe: true,
+    });
+
+    /** Consume customer identity for automatic header injection */
+    this._custConsumer = new ContextConsumer(this, {
+      context: customerContext,
       subscribe: true,
     });
   }
@@ -125,23 +133,16 @@ class AjaxProvider extends LitElement {
   // --------------- Ajax instance ---------------
 
   _createAjaxInstance() {
-    let parsedHeaders = {};
-    try {
-      parsedHeaders = JSON.parse(this.headers);
-    } catch (e) {
-      console.error(
-        `[AjaxProvider] Invalid headers JSON: ${this.headers}`,
-        e,
-      );
-    }
     this._ajaxInstance = new Ajax();
 
-    // Async gate interceptor: holds every request until the panel is visible.
-    // To apply custom headers, mutate `request.headers` here, e.g.:
-    //   Object.entries(parsedHeaders).forEach(([k, v]) => request.headers.set(k, v));
+    // Async gate interceptor: holds every request until the panel is visible,
+    // then injects worksession and customer IDs as headers.
     this._ajaxInstance.addRequestInterceptor(async (request) => {
       await this._waitUntilVisible();
-      console.log(`[AjaxProvider] headers for request:`, parsedHeaders);
+      const wsId = this._wsConsumer.value?.id;
+      const custId = this._custConsumer.value?.id;
+      if (wsId) request.headers.set('X-WorkSession-Id', wsId);
+      if (custId) request.headers.set('X-Customer-Id', custId);
       return request;
     });
 

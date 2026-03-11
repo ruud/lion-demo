@@ -11,5 +11,4 @@ import { ContextRoot } from '@lit/context';
  * This module MUST be imported before any component definitions to ensure the
  * listener is active when the first `context-request` fires.
  */
-const root = new ContextRoot(document);
-console.log('[context-root] ContextRoot initialized:', root);
+new ContextRoot(document);

@@ -63,15 +63,15 @@ class MyFetcher extends AjaxConsumerMixin(LitElement) {
       // request — the response interceptor works on real slow endpoints just
       // the same.
       const [jokeRes] = await Promise.all([
-        this.ajax.fetch('https://official-joke-api.appspot.com/random_joke'),
+        this.ajax.fetch('https://v2.jokeapi.dev/joke/Programming?type=twopart'),
         // 5 second server-side delay — DEMO-ONLY, see note above
         this.ajax.fetch('https://httpbin.org/delay/5'),
       ]);
       const data = await jokeRes.json();
-      this.joke = `${data.setup} — ${data.punchline}`;
+      this.joke = `${data.setup} — ${data.delivery}`;
       // Show the joke in a native dialog — if the response interceptor works,
       // this should only appear when the tab is active.
-      alert(`🃏 ${data.setup}\n\n${data.punchline}`);
+      alert(`🃏 ${data.setup}\n\n${data.delivery}`);
     } catch (e) {
       this.joke = `Error: ${e.message}`;
     }
